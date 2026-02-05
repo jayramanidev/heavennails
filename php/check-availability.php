@@ -32,14 +32,14 @@ if ($dateObj < $today) {
     jsonResponse(false, 'Cannot check availability for past dates');
 }
 
-// Define business hours (10:00 AM - 8:00 PM as shown in contact section)
-// Last booking slot at 7:00 PM to allow 1-hour minimum service before closing
+// Define business hours (8:00 AM - 10:00 PM, Mon-Sun)
+// Last booking slot at 9:00 PM to allow 1-hour minimum service before closing
 $businessHours = [
-    '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'
+    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'
 ];
 
-// Closing time in minutes from midnight (8:00 PM = 20:00 = 1200 minutes)
-$closingTime = 20 * 60;
+// Closing time in minutes from midnight (10:00 PM = 22:00 = 1320 minutes)
+$closingTime = 22 * 60;
 
 // Service durations in minutes
 $serviceDurations = [
