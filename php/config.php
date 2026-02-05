@@ -12,10 +12,10 @@ define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 // Admin Configuration
-define('ADMIN_EMAIL', 'admin@heavennails.com');
-define('SALON_NAME', 'Heaven Nails');
-define('SALON_PHONE', '+91 98765 43210');
-define('SALON_EMAIL', 'hello@heavennails.com');
+define('ADMIN_EMAIL', 'businesstheheavennails@gmail.com');
+define('SALON_NAME', 'The Heaven Nails');
+define('SALON_PHONE', '+91 93164 58160');
+define('SALON_EMAIL', 'businesstheheavennails@gmail.com');
 
 // Session Configuration
 session_start();
