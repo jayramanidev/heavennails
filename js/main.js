@@ -8,8 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initBookingForm();
     initServiceCalculator();
+    initAvailabilityChecker();
+    initGalleryLightbox();
+    initMobileFAB();
     setMinDate();
 });
+
+// Service durations in minutes
+const SERVICE_DURATIONS = {
+    'Classic Manicure': 45,
+    'Gel Extensions': 90,
+    'Nail Art': 60,
+    'Spa Pedicure': 60,
+    'Acrylic Nails': 90,
+    'Nail Repair': 30
+};
 
 // ================================
 // Navigation
@@ -52,13 +65,13 @@ function initBookingForm() {
     const nextBtns = document.querySelectorAll('.btn-next');
     const prevBtns = document.querySelectorAll('.btn-prev');
     const progressSteps = document.querySelectorAll('.progress-step');
-    
+
     // Next step buttons
     nextBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const currentStep = parseInt(btn.closest('.form-step').dataset.step);
             const nextStep = parseInt(btn.dataset.next);
-            
+
             if (validateStep(currentStep)) {
                 goToStep(nextStep);
             }
@@ -104,7 +117,7 @@ function goToStep(step) {
 
 function validateStep(step) {
     let isValid = true;
-    
+
     if (step === 1) {
         const checkboxes = document.querySelectorAll('input[name="services[]"]:checked');
         if (checkboxes.length === 0) {
@@ -114,7 +127,7 @@ function validateStep(step) {
     } else if (step === 2) {
         const date = document.getElementById('preferredDate');
         const time = document.getElementById('preferredTime');
-        
+
         if (!date.value) {
             showToast('Please select a date', 'error');
             isValid = false;
@@ -174,7 +187,7 @@ function isValidEmail(email) {
 
 async function handleSubmit(e) {
     e.preventDefault();
-    
+
     if (!validateStep(3)) return;
 
     const submitBtn = document.getElementById('submitBtn');
@@ -210,10 +223,10 @@ async function handleSubmit(e) {
 // ================================
 function initServiceCalculator() {
     const checkboxes = document.querySelectorAll('input[name="services[]"]');
-    checkboxes.forEach(cb => cb.addEventListener('change', updateTotal));
+    checkboxes.forEach(cb => cb.addEventListener('change', updateTotalAndDuration));
 }
 
-function updateTotal() {
+function updateTotalAndDuration() {
     const prices = {
         'Classic Manicure': 500,
         'Gel Extensions': 1500,
@@ -225,11 +238,35 @@ function updateTotal() {
 
     const checkboxes = document.querySelectorAll('input[name="services[]"]:checked');
     let total = 0;
+    let duration = 0;
+
     checkboxes.forEach(cb => {
         total += prices[cb.value] || 0;
+        duration += SERVICE_DURATIONS[cb.value] || 60;
     });
 
     document.getElementById('totalAmount').textContent = `₹${total.toLocaleString('en-IN')}`;
+
+    // Update duration display
+    const durationDisplay = document.getElementById('durationDisplay');
+    const durationAmount = document.getElementById('durationAmount');
+    if (durationDisplay && durationAmount) {
+        if (duration > 0) {
+            const hours = Math.floor(duration / 60);
+            const mins = duration % 60;
+            durationAmount.textContent = hours > 0
+                ? `${hours}h ${mins > 0 ? mins + 'min' : ''}`
+                : `${mins} min`;
+            durationDisplay.style.display = 'flex';
+        } else {
+            durationDisplay.style.display = 'none';
+        }
+    }
+}
+
+// Keep old function name for compatibility
+function updateTotal() {
+    updateTotalAndDuration();
 }
 
 // ================================
@@ -242,7 +279,7 @@ function setMinDate() {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         dateInput.min = tomorrow.toISOString().split('T')[0];
-        
+
         // Set max date to 30 days from now
         const maxDate = new Date(today);
         maxDate.setDate(maxDate.getDate() + 30);
@@ -273,7 +310,7 @@ function showToast(message, type = 'info') {
 // Smooth Scroll for Safari
 // ================================
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
+    anchor.addEventListener('click', function (e) {
         e.preventDefault();
         const target = document.querySelector(this.getAttribute('href'));
         if (target) {
@@ -281,3 +318,206 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
+// ================================
+// Real-Time Availability Checker
+// ================================
+function initAvailabilityChecker() {
+    const dateInput = document.getElementById('preferredDate');
+    const timeSelect = document.getElementById('preferredTime');
+    const staffSelect = document.getElementById('staffId');
+    const loadingIndicator = document.getElementById('slotLoading');
+
+    if (!dateInput || !timeSelect) return;
+
+    // Fetch availability when date or staff changes
+    dateInput.addEventListener('change', fetchAvailability);
+    staffSelect?.addEventListener('change', fetchAvailability);
+
+    async function fetchAvailability() {
+        const date = dateInput.value;
+        const staffId = staffSelect?.value || '';
+
+        if (!date) {
+            timeSelect.innerHTML = '<option value="">Select a date first</option>';
+            timeSelect.disabled = true;
+            return;
+        }
+
+        // Show loading state
+        if (loadingIndicator) loadingIndicator.style.display = 'flex';
+        timeSelect.disabled = true;
+        timeSelect.innerHTML = '<option value="">Loading...</option>';
+
+        try {
+            const url = `php/check-availability.php?date=${date}${staffId ? '&staff_id=' + staffId : ''}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success) {
+                // Populate staff dropdown if not already done
+                if (staffSelect && staffSelect.options.length <= 1 && data.staff) {
+                    data.staff.forEach(staff => {
+                        const option = document.createElement('option');
+                        option.value = staff.id;
+                        option.textContent = `${staff.avatar_emoji} ${staff.name} - ${staff.specialty}`;
+                        staffSelect.appendChild(option);
+                    });
+                }
+
+                // Populate time slots
+                timeSelect.innerHTML = '<option value="">Select a time slot</option>';
+
+                data.slots.forEach(slot => {
+                    const option = document.createElement('option');
+                    option.value = slot.time;
+
+                    if (slot.available) {
+                        option.textContent = slot.display;
+                    } else {
+                        option.textContent = `${slot.display} - ${slot.reason || 'Unavailable'}`;
+                        option.disabled = true;
+                    }
+
+                    timeSelect.appendChild(option);
+                });
+
+                timeSelect.disabled = false;
+            } else {
+                timeSelect.innerHTML = '<option value="">Unable to load slots</option>';
+                showToast(data.message || 'Failed to check availability', 'error');
+            }
+        } catch (error) {
+            console.error('Availability check failed:', error);
+            // Fallback to static slots if API fails
+            timeSelect.innerHTML = `
+                <option value="">Select a time slot</option>
+                <option value="10:00">10:00 AM</option>
+                <option value="11:00">11:00 AM</option>
+                <option value="12:00">12:00 PM</option>
+                <option value="13:00">1:00 PM</option>
+                <option value="14:00">2:00 PM</option>
+                <option value="15:00">3:00 PM</option>
+                <option value="16:00">4:00 PM</option>
+                <option value="17:00">5:00 PM</option>
+                <option value="18:00">6:00 PM</option>
+            `;
+            timeSelect.disabled = false;
+        } finally {
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+        }
+    }
+}
+
+// ================================
+// Gallery Lightbox
+// ================================
+function initGalleryLightbox() {
+    const galleryItems = document.querySelectorAll('.gallery-item');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const closeBtn = document.getElementById('lightboxClose');
+    const prevBtn = document.getElementById('lightboxPrev');
+    const nextBtn = document.getElementById('lightboxNext');
+
+    if (!lightbox || galleryItems.length === 0) return;
+
+    let currentIndex = 0;
+    const galleryData = [];
+
+    // Collect gallery data
+    galleryItems.forEach((item, index) => {
+        const placeholder = item.querySelector('.gallery-placeholder');
+        const emoji = placeholder?.querySelector('span')?.textContent || '💅';
+        const bg = placeholder?.style.background || '';
+
+        galleryData.push({
+            emoji,
+            background: bg,
+            caption: `Nail Art Design ${index + 1}`
+        });
+
+        item.addEventListener('click', () => openLightbox(index));
+    });
+
+    function openLightbox(index) {
+        currentIndex = index;
+        updateLightboxContent();
+        lightbox.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function updateLightboxContent() {
+        const item = galleryData[currentIndex];
+        lightboxImage.style.background = item.background;
+        lightboxImage.innerHTML = `<span>${item.emoji}</span>`;
+        lightboxCaption.textContent = item.caption;
+    }
+
+    function showPrev() {
+        currentIndex = (currentIndex - 1 + galleryData.length) % galleryData.length;
+        updateLightboxContent();
+    }
+
+    function showNext() {
+        currentIndex = (currentIndex + 1) % galleryData.length;
+        updateLightboxContent();
+    }
+
+    // Event listeners
+    closeBtn?.addEventListener('click', closeLightbox);
+    prevBtn?.addEventListener('click', showPrev);
+    nextBtn?.addEventListener('click', showNext);
+
+    // Close on background click
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeLightbox();
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (!lightbox.classList.contains('active')) return;
+
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') showPrev();
+        if (e.key === 'ArrowRight') showNext();
+    });
+}
+
+// ================================
+// Mobile Floating Action Button
+// ================================
+function initMobileFAB() {
+    const fab = document.getElementById('mobileFab');
+    const bookingSection = document.getElementById('booking');
+    const heroSection = document.getElementById('home');
+
+    if (!fab) return;
+
+    function updateFABVisibility() {
+        const scrollY = window.scrollY;
+        const heroBottom = heroSection?.offsetTop + heroSection?.offsetHeight || 500;
+        const bookingTop = bookingSection?.offsetTop || Infinity;
+        const bookingBottom = bookingTop + (bookingSection?.offsetHeight || 0);
+        const viewportHeight = window.innerHeight;
+
+        // Show FAB after hero, hide when booking section is in view
+        const pastHero = scrollY > heroBottom - 100;
+        const inBookingSection = scrollY + viewportHeight > bookingTop && scrollY < bookingBottom;
+
+        if (pastHero && !inBookingSection) {
+            fab.classList.add('visible');
+        } else {
+            fab.classList.remove('visible');
+        }
+    }
+
+    window.addEventListener('scroll', updateFABVisibility, { passive: true });
+    updateFABVisibility();
+}

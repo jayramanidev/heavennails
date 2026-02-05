@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Heaven Nails - Premium nail salon offering manicures, pedicures, nail art, and luxury treatments. Book your appointment today.">
+    <meta name="description"
+        content="Heaven Nails - Premium nail salon offering manicures, pedicures, nail art, and luxury treatments. Book your appointment today.">
     <meta name="keywords" content="nail salon, manicure, pedicure, nail art, gel nails, acrylic nails">
     <meta name="author" content="Heaven Nails">
     <title>Heaven Nails | Premium Nail Salon - Book Your Appointment</title>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
     <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar" id="navbar">
@@ -43,7 +48,8 @@
         <div class="hero-content">
             <span class="hero-tagline">Premium Nail Experience</span>
             <h1 class="hero-title">Elevate Your <span class="text-accent">Beauty</span></h1>
-            <p class="hero-description">Indulge in luxury nail care crafted with precision and passion. Where elegance meets artistry.</p>
+            <p class="hero-description">Indulge in luxury nail care crafted with precision and passion. Where elegance
+                meets artistry.</p>
             <a href="#booking" class="btn btn-primary">Book Appointment</a>
         </div>
         <div class="hero-scroll">
@@ -63,7 +69,8 @@
                 <div class="service-card">
                     <div class="service-icon">💅</div>
                     <h3 class="service-title">Classic Manicure</h3>
-                    <p class="service-desc">Luxurious hand treatment with nail shaping, cuticle care, and polish perfection.</p>
+                    <p class="service-desc">Luxurious hand treatment with nail shaping, cuticle care, and polish
+                        perfection.</p>
                     <span class="service-price">₹500</span>
                 </div>
                 <div class="service-card">
@@ -75,7 +82,8 @@
                 <div class="service-card">
                     <div class="service-icon">🎨</div>
                     <h3 class="service-title">Nail Art</h3>
-                    <p class="service-desc">Express yourself with custom designs, from minimal to intricate masterpieces.</p>
+                    <p class="service-desc">Express yourself with custom designs, from minimal to intricate
+                        masterpieces.</p>
                     <span class="service-price">₹800</span>
                 </div>
                 <div class="service-card">
@@ -100,7 +108,45 @@
         </div>
     </section>
 
-    <!-- Booking Section -->
+    <!-- Testimonials Section -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tagline">What Clients Say</span>
+                <h2 class="section-title">Reviews</h2>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">"Absolutely stunning gel extensions! Priya is incredibly talented and
+                        the salon ambiance is so relaxing. My go-to place for special occasions."</p>
+                    <div class="testimonial-author">
+                        <span class="author-name">Meera S.</span>
+                        <span class="author-service">Gel Extensions</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">"Best nail art in the city! They listened to my ideas and created
+                        something even better. Super hygienic and professional team."</p>
+                    <div class="testimonial-author">
+                        <span class="author-name">Anjali R.</span>
+                        <span class="author-service">Nail Art</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">"The spa pedicure was heavenly! Perfect for tired feet after a long
+                        week. Will definitely be coming back regularly."</p>
+                    <div class="testimonial-author">
+                        <span class="author-name">Kavitha M.</span>
+                        <span class="author-service">Spa Pedicure</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="booking" id="booking">
         <div class="container">
             <div class="section-header">
@@ -148,30 +194,36 @@
                             <span>Selected Total:</span>
                             <span class="total-amount" id="totalAmount">₹0</span>
                         </div>
+                        <div class="duration-display" id="durationDisplay" style="display: none;">
+                            <span>Estimated Time:</span>
+                            <span class="duration-amount" id="durationAmount">0 min</span>
+                        </div>
                         <button type="button" class="btn btn-primary btn-next" data-next="2">Continue</button>
                     </div>
 
-                    <!-- Step 2: Date & Time -->
+                    <!-- Honeypot field for spam protection -->
+                    <input type="text" name="website" class="honeypot-field" tabindex="-1" autocomplete="off">
+                    <!-- Step 2: Date, Time & Staff -->
                     <div class="form-step" data-step="2">
-                        <h3 class="step-title">Choose Date & Time</h3>
+                        <h3 class="step-title">Choose Date, Time & Artist</h3>
                         <div class="form-group">
                             <label for="preferredDate">Preferred Date</label>
                             <input type="date" id="preferredDate" name="preferred_date" required>
                         </div>
                         <div class="form-group">
-                            <label for="preferredTime">Preferred Time</label>
-                            <select id="preferredTime" name="preferred_time" required>
-                                <option value="">Select a time slot</option>
-                                <option value="10:00">10:00 AM</option>
-                                <option value="11:00">11:00 AM</option>
-                                <option value="12:00">12:00 PM</option>
-                                <option value="13:00">1:00 PM</option>
-                                <option value="14:00">2:00 PM</option>
-                                <option value="15:00">3:00 PM</option>
-                                <option value="16:00">4:00 PM</option>
-                                <option value="17:00">5:00 PM</option>
-                                <option value="18:00">6:00 PM</option>
+                            <label for="staffId">Choose Your Artist <span class="optional">(optional)</span></label>
+                            <select id="staffId" name="staff_id">
+                                <option value="">Any Available Artist</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="preferredTime">Preferred Time</label>
+                            <select id="preferredTime" name="preferred_time" required disabled>
+                                <option value="">Select a date first</option>
+                            </select>
+                            <div class="slot-loading" id="slotLoading" style="display: none;">
+                                <span class="loader-small"></span> Checking availability...
+                            </div>
                         </div>
                         <div class="form-buttons">
                             <button type="button" class="btn btn-secondary btn-prev" data-prev="1">Back</button>
@@ -184,7 +236,8 @@
                         <h3 class="step-title">Your Details</h3>
                         <div class="form-group">
                             <label for="clientName">Full Name</label>
-                            <input type="text" id="clientName" name="client_name" placeholder="Enter your name" required>
+                            <input type="text" id="clientName" name="client_name" placeholder="Enter your name"
+                                required>
                         </div>
                         <div class="form-group">
                             <label for="email">Email</label>
@@ -196,7 +249,8 @@
                         </div>
                         <div class="form-group">
                             <label for="notes">Special Requests (Optional)</label>
-                            <textarea id="notes" name="notes" rows="3" placeholder="Any preferences or requests..."></textarea>
+                            <textarea id="notes" name="notes" rows="3"
+                                placeholder="Any preferences or requests..."></textarea>
                         </div>
                         <div class="form-buttons">
                             <button type="button" class="btn btn-secondary btn-prev" data-prev="2">Back</button>
@@ -234,7 +288,8 @@
         <div class="modal-content">
             <div class="modal-icon">✓</div>
             <h3 class="modal-title">Booking Received!</h3>
-            <p class="modal-text">Thank you for choosing Heaven Nails. Your appointment is pending confirmation. We'll contact you shortly.</p>
+            <p class="modal-text">Thank you for choosing Heaven Nails. Your appointment is pending confirmation. We'll
+                contact you shortly.</p>
             <button class="btn btn-primary" id="closeModal">Done</button>
         </div>
     </div>
@@ -248,32 +303,38 @@
             </div>
             <div class="gallery-grid">
                 <div class="gallery-item">
-                    <div class="gallery-placeholder" style="background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);">
+                    <div class="gallery-placeholder"
+                        style="background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);">
                         <span>💅</span>
                     </div>
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder" style="background: linear-gradient(135deg, #d4a574 0%, #c49a6c 100%);">
+                    <div class="gallery-placeholder"
+                        style="background: linear-gradient(135deg, #d4a574 0%, #c49a6c 100%);">
                         <span>✨</span>
                     </div>
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder" style="background: linear-gradient(135deg, #f0e4d7 0%, #e5d4c3 100%);">
+                    <div class="gallery-placeholder"
+                        style="background: linear-gradient(135deg, #f0e4d7 0%, #e5d4c3 100%);">
                         <span>🎨</span>
                     </div>
                 </div>
                 <div class="gallery-item large">
-                    <div class="gallery-placeholder" style="background: linear-gradient(135deg, #c9a66b 0%, #b8956a 100%);">
+                    <div class="gallery-placeholder"
+                        style="background: linear-gradient(135deg, #c9a66b 0%, #b8956a 100%);">
                         <span>💎</span>
                     </div>
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder" style="background: linear-gradient(135deg, #e8dcd0 0%, #dbd1c5 100%);">
+                    <div class="gallery-placeholder"
+                        style="background: linear-gradient(135deg, #e8dcd0 0%, #dbd1c5 100%);">
                         <span>🌸</span>
                     </div>
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder" style="background: linear-gradient(135deg, #d8c4a8 0%, #cbba9f 100%);">
+                    <div class="gallery-placeholder"
+                        style="background: linear-gradient(135deg, #d8c4a8 0%, #cbba9f 100%);">
                         <span>💫</span>
                     </div>
                 </div>
@@ -324,17 +385,14 @@
                 <div class="contact-map">
                     <!-- Replace with actual Google Maps embed -->
                     <div class="map-placeholder" id="map">
-                        <iframe 
+                        <iframe
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.755714467429!2d72.8777!3d19.0760!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDA0JzM0LjYiTiA3MsKwNTInMzkuNyJF!5e0!3m2!1sen!2sin!4v1234567890"
-                            width="100%" 
-                            height="100%" 
-                            style="border:0;" 
-                            allowfullscreen="" 
-                            loading="lazy" 
+                            width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
                             referrerpolicy="no-referrer-when-downgrade">
                         </iframe>
                     </div>
-                    <a href="https://maps.google.com/?q=19.0760,72.8777" target="_blank" class="btn btn-secondary map-btn">
+                    <a href="https://maps.google.com/?q=19.0760,72.8777" target="_blank"
+                        class="btn btn-secondary map-btn">
                         Open in Google Maps
                     </a>
                 </div>
@@ -379,5 +437,23 @@
 
     <!-- Scripts -->
     <script src="js/main.js"></script>
+
+    <!-- Gallery Lightbox Modal -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose" aria-label="Close">&times;</button>
+        <button class="lightbox-prev" id="lightboxPrev" aria-label="Previous">&#10094;</button>
+        <div class="lightbox-content">
+            <div class="lightbox-image" id="lightboxImage"></div>
+            <p class="lightbox-caption" id="lightboxCaption"></p>
+        </div>
+        <button class="lightbox-next" id="lightboxNext" aria-label="Next">&#10095;</button>
+    </div>
+
+    <!-- Mobile Floating Action Button -->
+    <a href="#booking" class="mobile-fab" id="mobileFab" aria-label="Book Now">
+        <span class="fab-icon">💅</span>
+        <span class="fab-text">Book</span>
+    </a>
 </body>
+
 </html>

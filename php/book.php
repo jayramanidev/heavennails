@@ -11,6 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(false, 'Invalid request method');
 }
 
+// Honeypot spam protection - if this field is filled, it's a bot
+$honeypot = $_POST['website'] ?? '';
+if (!empty($honeypot)) {
+    // Silently reject bot submissions
+    sleep(2); // Slow down bots
+    jsonResponse(false, 'Booking failed. Please try again.');
+}
+
 // Get and sanitize form data
 $clientName = sanitize($_POST['client_name'] ?? '');
 $email = sanitize($_POST['email'] ?? '');
@@ -19,6 +27,7 @@ $services = $_POST['services'] ?? [];
 $preferredDate = sanitize($_POST['preferred_date'] ?? '');
 $preferredTime = sanitize($_POST['preferred_time'] ?? '');
 $notes = sanitize($_POST['notes'] ?? '');
+$staffId = isset($_POST['staff_id']) && $_POST['staff_id'] !== '' ? intval($_POST['staff_id']) : null;
 
 // Validate required fields
 $errors = [];
@@ -64,13 +73,47 @@ if (!empty($errors)) {
 $sanitizedServices = array_map('sanitize', $services);
 $servicesJson = json_encode($sanitizedServices);
 
+// Calculate total duration based on selected services
+$serviceDurations = [
+    'Classic Manicure' => 45,
+    'Gel Extensions' => 90,
+    'Nail Art' => 60,
+    'Spa Pedicure' => 60,
+    'Acrylic Nails' => 90,
+    'Nail Repair' => 30
+];
+$totalDuration = 0;
+foreach ($sanitizedServices as $service) {
+    $totalDuration += $serviceDurations[$service] ?? 60;
+}
+$totalDuration = max(60, $totalDuration); // Minimum 1 hour
+
 try {
     $db = Database::getInstance()->getConnection();
     
+    // Check if slot is still available (prevent race conditions)
+    $checkSql = "SELECT COUNT(*) FROM appointments 
+                 WHERE preferred_date = :date 
+                 AND preferred_time = :time 
+                 AND status IN ('pending', 'confirmed')";
+    $checkParams = [':date' => $preferredDate, ':time' => $preferredTime];
+    
+    if ($staffId) {
+        $checkSql .= " AND (staff_id = :staff_id OR staff_id IS NULL)";
+        $checkParams[':staff_id'] = $staffId;
+    }
+    
+    $checkStmt = $db->prepare($checkSql);
+    $checkStmt->execute($checkParams);
+    
+    if ($checkStmt->fetchColumn() > 0) {
+        jsonResponse(false, 'Sorry, this time slot was just booked. Please select another time.');
+    }
+    
     // Insert booking
     $stmt = $db->prepare("
-        INSERT INTO appointments (client_name, email, phone, services, preferred_date, preferred_time, notes, status, created_at)
-        VALUES (:client_name, :email, :phone, :services, :preferred_date, :preferred_time, :notes, 'pending', NOW())
+        INSERT INTO appointments (client_name, email, phone, services, preferred_date, preferred_time, notes, status, staff_id, duration_minutes, created_at)
+        VALUES (:client_name, :email, :phone, :services, :preferred_date, :preferred_time, :notes, 'pending', :staff_id, :duration, NOW())
     ");
     
     $stmt->execute([
@@ -80,7 +123,9 @@ try {
         ':services' => $servicesJson,
         ':preferred_date' => $preferredDate,
         ':preferred_time' => $preferredTime,
-        ':notes' => $notes
+        ':notes' => $notes,
+        ':staff_id' => $staffId,
+        ':duration' => $totalDuration
     ]);
     
     $bookingId = $db->lastInsertId();
