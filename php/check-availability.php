@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 // Get and validate date parameter
 $date = sanitize($_GET['date'] ?? '');
 $staffId = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : null;
+$selectedServices = isset($_GET['services']) ? explode(',', $_GET['services']) : [];
 
 if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
     jsonResponse(false, 'Invalid date format. Use YYYY-MM-DD');
@@ -31,10 +32,14 @@ if ($dateObj < $today) {
     jsonResponse(false, 'Cannot check availability for past dates');
 }
 
-// Define business hours (10:00 AM - 6:00 PM, 1-hour slots)
+// Define business hours (10:00 AM - 8:00 PM as shown in contact section)
+// Last booking slot at 7:00 PM to allow 1-hour minimum service before closing
 $businessHours = [
-    '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+    '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'
 ];
+
+// Closing time in minutes from midnight (8:00 PM = 20:00 = 1200 minutes)
+$closingTime = 20 * 60;
 
 // Service durations in minutes
 $serviceDurations = [
@@ -46,10 +51,18 @@ $serviceDurations = [
     'Nail Repair' => 30
 ];
 
+// Calculate total duration for selected services
+$requestedDuration = 0;
+foreach ($selectedServices as $service) {
+    $service = trim($service);
+    $requestedDuration += $serviceDurations[$service] ?? 60;
+}
+$requestedDuration = max(60, $requestedDuration); // Minimum 1 hour
+
 try {
     $db = Database::getInstance()->getConnection();
     
-    // Get booked slots for the date
+    // Get booked slots for the date WITH their durations
     $sql = "SELECT preferred_time, duration_minutes, staff_id 
             FROM appointments 
             WHERE preferred_date = :date 
@@ -96,8 +109,17 @@ try {
         $available = true;
         $reason = null;
         
+        // Convert slot time to minutes from midnight
+        $slotMinutes = intval(substr($time, 0, 2)) * 60 + intval(substr($time, 3, 2));
+        
+        // Check if service would end after closing time
+        if ($slotMinutes + $requestedDuration > $closingTime) {
+            $available = false;
+            $reason = 'Service would end after closing';
+        }
+        
         // Check if day is blocked
-        if ($dayBlocked) {
+        if ($available && $dayBlocked) {
             $available = false;
             $reason = 'Salon closed';
         }
@@ -109,8 +131,10 @@ try {
                     $blockStart = strtotime($block['block_time']);
                     $blockEnd = $block['end_time'] ? strtotime($block['end_time']) : $blockStart + 3600;
                     $slotTime = strtotime($time);
+                    $slotEndTime = $slotTime + ($requestedDuration * 60);
                     
-                    if ($slotTime >= $blockStart && $slotTime < $blockEnd) {
+                    // Check if requested slot overlaps with blocked time
+                    if ($slotTime < $blockEnd && $slotEndTime > $blockStart) {
                         $available = false;
                         $reason = 'Blocked';
                         break;
@@ -119,11 +143,19 @@ try {
             }
         }
         
-        // Check if slot is already booked
+        // Check if slot overlaps with existing bookings (considering service duration)
         if ($available) {
+            $slotTime = strtotime($time);
+            $slotEndTime = $slotTime + ($requestedDuration * 60);
+            
             foreach ($bookedSlots as $booking) {
-                $bookingTime = date('H:i', strtotime($booking['preferred_time']));
-                if ($bookingTime === $time) {
+                $bookingStart = strtotime($booking['preferred_time']);
+                $bookingDuration = $booking['duration_minutes'] ?? 60;
+                $bookingEnd = $bookingStart + ($bookingDuration * 60);
+                
+                // Check for overlap: new booking would overlap if it starts before existing ends
+                // AND ends after existing starts
+                if ($slotTime < $bookingEnd && $slotEndTime > $bookingStart) {
                     $available = false;
                     $reason = 'Booked';
                     break;
@@ -151,7 +183,8 @@ try {
         'date' => $date,
         'slots' => $slots,
         'staff' => $staffList,
-        'service_durations' => $serviceDurations
+        'service_durations' => $serviceDurations,
+        'requested_duration' => $requestedDuration
     ]);
     
 } catch (PDOException $e) {

@@ -1153,14 +1153,14 @@ textarea {
 }
 
 /* Time slot states */
+/* Disabled time slots styling */
 #preferredTime option[disabled] {
     color: #999;
     background: #f0f0f0;
 }
 
-#preferredTime option.booked::after {
-    content: ' (Booked)';
-}
+/* Note: ::after pseudo-elements don't work on <option> elements in browsers.
+   The booked/unavailable text is added via JavaScript instead. */
 
 /* Testimonials Section */
 .testimonials {
@@ -1285,8 +1285,13 @@ textarea {
     justify-content: center;
 }
 
-.lightbox-prev { left: var(--space-md); }
-.lightbox-next { right: var(--space-md); }
+.lightbox-prev {
+    left: var(--space-md);
+}
+
+.lightbox-next {
+    right: var(--space-md);
+}
 
 .lightbox-prev:hover,
 .lightbox-next:hover {
@@ -1315,8 +1320,15 @@ textarea {
 }
 
 @keyframes zoomIn {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .lightbox-caption {
@@ -1372,8 +1384,17 @@ textarea {
 }
 
 @keyframes fab-pulse {
-    0%, 100% { transform: scale(1); opacity: 0; }
-    50% { transform: scale(1.15); opacity: 0.3; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 0.3;
+    }
 }
 
 .fab-icon {

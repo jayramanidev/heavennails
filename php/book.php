@@ -91,44 +91,87 @@ $totalDuration = max(60, $totalDuration); // Minimum 1 hour
 try {
     $db = Database::getInstance()->getConnection();
     
-    // Check if slot is still available (prevent race conditions)
-    $checkSql = "SELECT COUNT(*) FROM appointments 
-                 WHERE preferred_date = :date 
-                 AND preferred_time = :time 
-                 AND status IN ('pending', 'confirmed')";
-    $checkParams = [':date' => $preferredDate, ':time' => $preferredTime];
+    // Start transaction for atomic check-and-insert (fixes TOCTOU race condition)
+    $db->beginTransaction();
     
-    if ($staffId) {
-        $checkSql .= " AND (staff_id = :staff_id OR staff_id IS NULL)";
-        $checkParams[':staff_id'] = $staffId;
+    try {
+        // Lock the relevant rows to prevent race condition
+        // Using SELECT ... FOR UPDATE to lock matching rows during transaction
+        $checkSql = "SELECT id FROM appointments 
+                     WHERE preferred_date = :date 
+                     AND status IN ('pending', 'confirmed')
+                     FOR UPDATE";
+        $checkParams = [':date' => $preferredDate];
+        
+        $checkStmt = $db->prepare($checkSql);
+        $checkStmt->execute($checkParams);
+        $existingBookings = $checkStmt->fetchAll();
+        
+        // Check for time overlap with service duration
+        $requestedStart = strtotime($preferredTime);
+        $requestedEnd = $requestedStart + ($totalDuration * 60);
+        
+        // Fetch full booking details for overlap check
+        $detailSql = "SELECT preferred_time, duration_minutes, staff_id 
+                      FROM appointments 
+                      WHERE preferred_date = :date 
+                      AND status IN ('pending', 'confirmed')";
+        $detailParams = [':date' => $preferredDate];
+        
+        if ($staffId) {
+            $detailSql .= " AND (staff_id = :staff_id OR staff_id IS NULL)";
+            $detailParams[':staff_id'] = $staffId;
+        }
+        
+        $detailStmt = $db->prepare($detailSql);
+        $detailStmt->execute($detailParams);
+        $bookedSlots = $detailStmt->fetchAll();
+        
+        $hasConflict = false;
+        foreach ($bookedSlots as $booking) {
+            $bookingStart = strtotime($booking['preferred_time']);
+            $bookingDuration = $booking['duration_minutes'] ?? 60;
+            $bookingEnd = $bookingStart + ($bookingDuration * 60);
+            
+            // Check for overlap
+            if ($requestedStart < $bookingEnd && $requestedEnd > $bookingStart) {
+                $hasConflict = true;
+                break;
+            }
+        }
+        
+        if ($hasConflict) {
+            $db->rollBack();
+            jsonResponse(false, 'Sorry, this time slot was just booked. Please select another time.');
+        }
+        
+        // Insert booking
+        $stmt = $db->prepare("
+            INSERT INTO appointments (client_name, email, phone, services, preferred_date, preferred_time, notes, status, staff_id, duration_minutes, created_at)
+            VALUES (:client_name, :email, :phone, :services, :preferred_date, :preferred_time, :notes, 'pending', :staff_id, :duration, NOW())
+        ");
+        
+        $stmt->execute([
+            ':client_name' => $clientName,
+            ':email' => $email,
+            ':phone' => $phone,
+            ':services' => $servicesJson,
+            ':preferred_date' => $preferredDate,
+            ':preferred_time' => $preferredTime,
+            ':notes' => $notes,
+            ':staff_id' => $staffId,
+            ':duration' => $totalDuration
+        ]);
+        
+        $bookingId = $db->lastInsertId();
+        
+        // Commit the transaction
+        $db->commit();
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        throw $e;
     }
-    
-    $checkStmt = $db->prepare($checkSql);
-    $checkStmt->execute($checkParams);
-    
-    if ($checkStmt->fetchColumn() > 0) {
-        jsonResponse(false, 'Sorry, this time slot was just booked. Please select another time.');
-    }
-    
-    // Insert booking
-    $stmt = $db->prepare("
-        INSERT INTO appointments (client_name, email, phone, services, preferred_date, preferred_time, notes, status, staff_id, duration_minutes, created_at)
-        VALUES (:client_name, :email, :phone, :services, :preferred_date, :preferred_time, :notes, 'pending', :staff_id, :duration, NOW())
-    ");
-    
-    $stmt->execute([
-        ':client_name' => $clientName,
-        ':email' => $email,
-        ':phone' => $phone,
-        ':services' => $servicesJson,
-        ':preferred_date' => $preferredDate,
-        ':preferred_time' => $preferredTime,
-        ':notes' => $notes,
-        ':staff_id' => $staffId,
-        ':duration' => $totalDuration
-    ]);
-    
-    $bookingId = $db->lastInsertId();
     
     // Format services for email
     $servicesText = implode(', ', $sanitizedServices);

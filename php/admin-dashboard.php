@@ -93,6 +93,12 @@ if (isset($_GET['ajax'])) {
 
 // Handle block date form
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Validate CSRF token for all POST actions
+    if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
+        http_response_code(403);
+        die('Invalid CSRF token. Please refresh and try again.');
+    }
+    
     $action = $_POST['action'];
     
     if ($action === 'block_date') {
@@ -349,6 +355,7 @@ try {
                 <h4>🚫 Block Date/Time</h4>
                 <form method="POST" action="?view=calendar">
                     <input type="hidden" name="action" value="block_date">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
                     <div class="form-row">
                         <div class="form-group">
                             <label>Date *</label>
@@ -414,6 +421,7 @@ try {
                                 form.method = 'POST';
                                 form.innerHTML = `
                                     <input type="hidden" name="action" value="unblock">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
                                     <input type="hidden" name="block_id" value="${props.blockId}">
                                 `;
                                 document.body.appendChild(form);
@@ -497,12 +505,14 @@ try {
                                 <?php if ($booking['status'] === 'pending'): ?>
                                     <form method="POST" style="display: inline;">
                                         <input type="hidden" name="action" value="update_status">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
                                         <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
                                         <input type="hidden" name="status" value="confirmed">
                                         <button type="submit" class="action-btn btn-confirm">Confirm</button>
                                     </form>
                                     <form method="POST" style="display: inline;">
                                         <input type="hidden" name="action" value="update_status">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
                                         <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
                                         <input type="hidden" name="status" value="cancelled">
                                         <button type="submit" class="action-btn btn-cancel">Cancel</button>
@@ -510,6 +520,7 @@ try {
                                 <?php elseif ($booking['status'] === 'confirmed'): ?>
                                     <form method="POST" style="display: inline;">
                                         <input type="hidden" name="action" value="update_status">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
                                         <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
                                         <input type="hidden" name="status" value="cancelled">
                                         <button type="submit" class="action-btn btn-cancel">Cancel</button>
@@ -517,6 +528,7 @@ try {
                                 <?php endif; ?>
                                 <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this booking permanently?');">
                                     <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
                                     <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
                                     <button type="submit" class="action-btn btn-delete">Delete</button>
                                 </form>
