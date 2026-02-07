@@ -138,9 +138,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($action === 'update_status') {
         $bookingId = intval($_POST['booking_id'] ?? 0);
         $newStatus = sanitize($_POST['status'] ?? '');
+
         if ($bookingId > 0 && in_array($newStatus, ['pending', 'confirmed', 'cancelled'])) {
-            $stmt = $db->prepare("UPDATE appointments SET status = ? WHERE id = ?");
-            $stmt->execute([$newStatus, $bookingId]);
+            // Fetch booking details first to get email
+            $stmt = $db->prepare("SELECT * FROM appointments WHERE id = ?");
+            $stmt->execute([$bookingId]);
+            $booking = $stmt->fetch();
+
+            if ($booking) {
+                // Update status
+                $updateStmt = $db->prepare("UPDATE appointments SET status = ? WHERE id = ?");
+                $updateStmt->execute([$newStatus, $bookingId]);
+
+                // Send email notification based on status
+                $clientName = $booking['client_name'];
+                $email = $booking['email'];
+                $date = date('F j, Y', strtotime($booking['preferred_date']));
+                $time = date('g:i A', strtotime($booking['preferred_time']));
+
+                $subject = "Update on your Appointment - " . SALON_NAME;
+                $message = "";
+
+                if ($newStatus === 'confirmed') {
+                    $subject = "Appointment Confirmed - " . SALON_NAME;
+                    $message = "Dear $clientName,\n\nGreat news! Your appointment has been confirmed.\n\nDate: $date\nTime: $time\n\nWe look forward to seeing you!\n\nBest regards,\n" . SALON_NAME;
+                } elseif ($newStatus === 'cancelled') {
+                    $subject = "Appointment Cancelled - " . SALON_NAME;
+                    $message = "Dear $clientName,\n\nYour appointment on $date at $time has been cancelled.\n\nIf this was a mistake or you'd like to reschedule, please contact us at " . SALON_PHONE . ".\n\nBest regards,\n" . SALON_NAME;
+                }
+
+                if ($message) {
+                    sendMail($email, $subject, $message);
+                }
+            }
         }
         header('Location: admin-dashboard.php' . (isset($_GET['view']) ? '?view=' . $_GET['view'] : ''));
         exit;

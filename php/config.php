@@ -57,6 +57,21 @@ class Database {
     }
 }
 
+// Email Configuration (PHPMailer)
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
+
+require 'PHPMailer/src/Exception.php';
+require 'PHPMailer/src/PHPMailer.php';
+require 'PHPMailer/src/SMTP.php';
+
+// SMTP Settings
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_PORT', 587); // TLS port
+define('SMTP_USER', 'ramanijay333@gmail.com'); 
+define('SMTP_PASS', 'taeg ptfg mphd zgua'); // TODO: Replace with your actual App Password
+
 // Helper Functions
 function sanitize($input) {
     return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
@@ -93,5 +108,42 @@ function generateCSRFToken() {
 
 function validateCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * Send email using PHPMailer
+ * @param string $to Recipient email
+ * @param string $subject Subject line
+ * @param string $body Email body (HTML allowed)
+ * @return bool True if sent, False otherwise
+ */
+function sendMail($to, $subject, $body) {
+    $mail = new PHPMailer(true);
+
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = SMTP_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = SMTP_USER;
+        $mail->Password   = str_replace(' ', '', SMTP_PASS); // Strip spaces from App Password
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = SMTP_PORT;
+
+        // Recipients
+        $mail->setFrom(SMTP_USER, SALON_NAME);
+        $mail->addAddress($to);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = nl2br($body); // Convert newlines to <br> tags for HTML email
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        return false;
+    }
 }
 ?>
