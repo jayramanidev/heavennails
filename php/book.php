@@ -199,7 +199,7 @@ Status: Pending
 Please log in to the admin dashboard to confirm or manage this booking.
 ";
     
-    @mail(ADMIN_EMAIL, $adminSubject, $adminMessage, "From: noreply@heavennails.com");
+    sendMail(ADMIN_EMAIL, $adminSubject, $adminMessage);
     
     // Send client confirmation email
     $clientSubject = "Your Appointment Request - " . SALON_NAME;
@@ -225,7 +225,7 @@ Best regards,
 " . SALON_EMAIL . "
 ";
     
-    @mail($email, $clientSubject, $clientMessage, "From: " . SALON_EMAIL);
+    sendMail($email, $clientSubject, $clientMessage);
     
     jsonResponse(true, 'Booking submitted successfully', ['booking_id' => $bookingId]);
     
