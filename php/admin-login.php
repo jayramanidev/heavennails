@@ -5,31 +5,39 @@
 
 require_once 'config.php';
 
-// Redirect if already logged in
-if (isLoggedIn()) {
-    header('Location: admin-dashboard.php');
+// Check if already logged in
+if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+    header('Location: ../admin');
     exit;
 }
 
 $error = '';
 
-// Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = sanitize($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    // For demo purposes, using hardcoded credentials
-    // In production, verify against database with password_verify()
-    $validUsername = 'admin';
-    $validPasswordHash = password_hash('heaven2026', PASSWORD_DEFAULT);
-    
-    if ($username === $validUsername && password_verify($password, $validPasswordHash)) {
-        $_SESSION['admin_logged_in'] = true;
-        $_SESSION['admin_username'] = $username;
-        header('Location: admin-dashboard.php');
-        exit;
-    } else {
-        $error = 'Invalid username or password';
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+
+    try {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("SELECT id, username, password_hash FROM admins WHERE username = :username");
+        $stmt->execute([':username' => $username]);
+        $user = $stmt->fetch();
+
+        if ($user && password_verify($password, $user['password_hash'])) {
+            $_SESSION['admin_logged_in'] = true;
+            $_SESSION['admin_id'] = $user['id'];
+            // Regenerate session ID to prevent session fixation
+            session_regenerate_id(true);
+            header('Location: ../admin');
+            exit;
+        } else {
+            $error = 'Invalid username or password';
+            // Slow down brute force attacks slightly
+            usleep(500000); 
+        }
+    } catch (PDOException $e) {
+        error_log("Login error: " . $e->getMessage());
+        $error = 'An error occurred. Please try again later.';
     }
 }
 
@@ -41,53 +49,78 @@ $csrfToken = generateCSRFToken();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - Heaven Nails</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/jpeg" href="../assets/images/logo/logo.png.jpg?v=2">
+    <link rel="stylesheet" href="../css/style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Montserrat', sans-serif; background: linear-gradient(135deg, #f5f0ea 0%, #e5dcd0 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-        .login-container { background: white; padding: 3rem 2rem; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        .login-logo { text-align: center; margin-bottom: 2rem; }
-        .login-logo h1 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: #2d2d2d; }
-        .login-logo span { color: #c9a66b; }
-        .login-subtitle { text-align: center; color: #6b6b6b; font-size: 0.875rem; margin-bottom: 2rem; }
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        /* ... existing styles ... */
+        .login-logo {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .logo-img {
+            max-width: 150px;
+            max-height: 80px;
+            mix-blend-mode: multiply; /* Removes white bg */
+        }
+        .login-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--color-primary);
+            font-family: 'Cormorant Garamond', serif;
+        }
         .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; font-size: 0.875rem; font-weight: 500; color: #2d2d2d; margin-bottom: 0.5rem; }
-        .form-group input { width: 100%; padding: 0.875rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: border-color 0.2s; }
-        .form-group input:focus { outline: none; border-color: #c9a66b; }
-        .btn-login { width: 100%; padding: 1rem; background: #c9a66b; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-login:hover { background: #b8956a; }
-        .error-message { background: #fef2f2; color: #dc2626; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; margin-bottom: 1.5rem; text-align: center; }
-        .back-link { display: block; text-align: center; margin-top: 1.5rem; color: #6b6b6b; text-decoration: none; font-size: 0.875rem; }
         .back-link:hover { color: #c9a66b; }
+        /* Add button styles explicitly just in case CSS fails */
+        .btn-login {
+            width: 100%;
+            padding: 0.8rem;
+            background-color: #c9a66b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-login:hover {
+            background-color: #b8956a;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-logo">
-            <h1>Heaven<span>Nails</span></h1>
+            <img src="../assets/images/logo/logo.png.jpg" alt="Heaven Nails" class="logo-img">
+            <h1 class="login-title" style="margin-top: 0.5rem; margin-bottom: 0;">The Heaven <span>Nails</span></h1>
         </div>
         <p class="login-subtitle">Admin Dashboard Access</p>
         
         <?php if ($error): ?>
-            <div class="error-message"><?= htmlspecialchars($error) ?></div>
+            <div class="error-message" style="color: red; text-align: center; margin-bottom: 1rem;"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
         
         <form method="POST" action="">
-            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required autofocus>
+                <input type="text" id="username" name="username" required autofocus style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
             </div>
             <button type="submit" class="btn-login">Sign In</button>
         </form>
         
-        <a href="../index.html" class="back-link">← Back to Website</a>
+        <a href="../index.html" class="back-link" style="display: block; text-align: center; margin-top: 1rem; text-decoration: none; color: #666;">← Back to Website</a>
     </div>
 </body>
 </html>

@@ -181,48 +181,52 @@ try {
     // Send admin notification email
     $adminSubject = "New Booking Request - " . SALON_NAME;
     $adminMessage = "
-New Appointment Request
-
-Client: $clientName
-Email: $email
-Phone: $phone
-
-Services: $servicesText
-Date: $formattedDate
-Time: $formattedTime
-
-Notes: " . ($notes ?: 'None') . "
-
-Booking ID: #$bookingId
-Status: Pending
-
+New Appointment Request<br><br>
+Client: $clientName<br>
+Email: $email<br>
+Phone: $phone<br><br>
+Services: $servicesText<br>
+Date: $formattedDate<br>
+Time: $formattedTime<br><br>
+Notes: " . ($notes ?: 'None') . "<br><br>
+Booking ID: #$bookingId<br>
+Status: Pending<br><br>
 Please log in to the admin dashboard to confirm or manage this booking.
 ";
     
     sendMail(ADMIN_EMAIL, $adminSubject, $adminMessage);
     
     // Send client confirmation email
-    $clientSubject = "Your Appointment Request - " . SALON_NAME;
+    $clientSubject = "We’ve received your request! ✨ (Appointment #$bookingId)";
     $clientMessage = "
-Dear $clientName,
+<html>
+<body style='font-family: sans-serif; color: #333;'>
+<p>Dear $clientName,</p>
 
-Thank you for choosing " . SALON_NAME . "!
+<p>Thank you for choosing " . SALON_NAME . "! We have received your booking request and are checking our availability.</p>
 
-Your appointment request has been received:
+<p><strong>Requested Details:</strong></p>
 
-Services: $servicesText
-Date: $formattedDate
+<p>
+Service: $servicesText<br>
+Date: $formattedDate<br>
 Time: $formattedTime
+</p>
 
-Your booking is currently PENDING confirmation. We will contact you shortly to confirm your appointment.
+<p><strong>Status:</strong> 🟡 PENDING APPROVAL</p>
 
-If you have any questions, please call us at " . SALON_PHONE . " or reply to this email.
+<p><strong>What happens next?</strong> Our team will review your request and send a separate confirmation email shortly. Please do not arrive at the studio until you receive this final confirmation.</p>
 
-We look forward to seeing you!
+<p><strong>Need to make changes?</strong> You can reply to this email or call us at " . SALON_PHONE . ".</p>
 
-Best regards,
-" . SALON_NAME . "
-" . SALON_EMAIL . "
+<p>While you wait, check out our latest designs on Instagram: <a href='https://www.instagram.com/the_heaven_nail_/'>@the_heaven_nail_</a></p>
+
+<p>Chat on WhatsApp: <a href='https://wa.me/919316458160'>+91 93164 58160</a></p>
+
+<p>Warmly,<br>
+The Heaven Nails Team</p>
+</body>
+</html>
 ";
     
     sendMail($email, $clientSubject, $clientMessage);

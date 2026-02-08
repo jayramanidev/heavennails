@@ -1,0 +1,9 @@
+php/secrets.php
+.env
+.ds_store
+Thumbs.db
+node_modules/
+vendor/
+.vscode/
+.idea/
+*.log

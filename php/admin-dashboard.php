@@ -156,15 +156,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $date = date('F j, Y', strtotime($booking['preferred_date']));
                 $time = date('g:i A', strtotime($booking['preferred_time']));
 
-                $subject = "Update on your Appointment - " . SALON_NAME;
-                $message = "";
-
                 if ($newStatus === 'confirmed') {
-                    $subject = "Appointment Confirmed - " . SALON_NAME;
-                    $message = "Dear $clientName,\n\nGreat news! Your appointment has been confirmed.\n\nDate: $date\nTime: $time\n\nWe look forward to seeing you!\n\nBest regards,\n" . SALON_NAME;
+                    $servicesArr = json_decode($booking['services'], true);
+                    $serviceList = is_array($servicesArr) ? implode(', ', $servicesArr) : $booking['services'];
+                    $dayOfWeek = date('l', strtotime($booking['preferred_date']));
+                    $googleMapsLink = "https://maps.app.goo.gl/sL6c3vtcnqBhm7os8"; // From index.html
+
+                    $subject = "You’re Booked! ✨ Appointment Confirmed at The Heaven Nails";
+                    $message = "
+<html>
+<body style='font-family: sans-serif; color: #333;'>
+<p>Dear $clientName,</p>
+
+<p>We are delighted to confirm your appointment! ✅ Your slot has been officially secured, and our team is looking forward to pampering you.</p>
+
+<p><strong>Your Appointment Details:</strong></p>
+
+<p>
+Service: $serviceList<br>
+📅 Date: $dayOfWeek, $date<br>
+🕒 Time: $time<br>
+📍 Location: The Heaven Nails, Shree Ram Society 5-A, Rajkot. (<a href='$googleMapsLink'>View on Map</a>)
+</p>
+
+<p><strong>✨ Important Reminders for a Perfect Experience:</strong></p>
+
+<ul>
+<li><strong>Arrive on Time:</strong> Please arrive 10 minutes early to select your colors and relax. If you are more than 15 minutes late, we may need to shorten your service or reschedule to respect the next client’s time.</li>
+<li><strong>Gel Removal:</strong> If you currently have gel polish or extensions on your nails that need removal, please let us know in advance so we can adjust the timing.</li>
+<li><strong>Cancellations:</strong> We understand plans change! If you need to reschedule, please notify us at least 24 hours in advance.</li>
+</ul>
+
+<p>Need help finding us? Call or WhatsApp us at " . SALON_PHONE . ".</p>
+
+<p>See you on $dayOfWeek!</p>
+
+<p>Warmly,<br>
+The Heaven Nails Team<br>
+<em>Where Beauty Meets Perfection</em></p>
+</body>
+</html>
+";
                 } elseif ($newStatus === 'cancelled') {
-                    $subject = "Appointment Cancelled - " . SALON_NAME;
-                    $message = "Dear $clientName,\n\nYour appointment on $date at $time has been cancelled.\n\nIf this was a mistake or you'd like to reschedule, please contact us at " . SALON_PHONE . ".\n\nBest regards,\n" . SALON_NAME;
+                    $reason = "Due to an unforeseen scheduling conflict on our end. We sincerely apologize for the inconvenience."; // Default reason
+                    
+                    $subject = "Update regarding your appointment ❌";
+                    $message = "
+<html>
+<body style='font-family: sans-serif; color: #333;'>
+<p>Dear $clientName,</p>
+
+<p>We are writing to inform you that your appointment scheduled for $date at $time has been cancelled.</p>
+
+<p><strong>Reason:</strong> $reason</p>
+
+<p><strong>Ready to re-book?</strong> We would love to see you another time! You can reschedule your appointment by replying to this email or calling us at " . SALON_PHONE . ".</p>
+
+<p>Thank you for understanding.</p>
+
+<p>Best regards,<br>
+The Heaven Nails Team Rajkot</p>
+</body>
+</html>
+";
                 }
 
                 if ($message) {
@@ -172,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
         }
-        header('Location: admin-dashboard.php' . (isset($_GET['view']) ? '?view=' . $_GET['view'] : ''));
+        header('Location: admin' . (isset($_GET['view']) ? '?view=' . $_GET['view'] : ''));
         exit;
     }
     
@@ -182,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt = $db->prepare("DELETE FROM appointments WHERE id = ?");
             $stmt->execute([$bookingId]);
         }
-        header('Location: admin-dashboard.php' . (isset($_GET['view']) ? '?view=' . $_GET['view'] : ''));
+        header('Location: admin' . (isset($_GET['view']) ? '?view=' . $_GET['view'] : ''));
         exit;
     }
 }
@@ -190,7 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Logout
 if (isset($_GET['logout'])) {
     session_destroy();
-    header('Location: admin-login.php');
+    header('Location: login');
     exit;
 }
 
@@ -236,6 +290,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Heaven Nails</title>
+    <link rel="icon" type="image/jpeg" href="../assets/images/logo/logo.png.jpg?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
@@ -244,104 +299,21 @@ try {
         body { font-family: 'Montserrat', sans-serif; background: #f5f0ea; min-height: 100vh; }
         
         .header { background: #1a1a1a; color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; }
-        .logo span { color: #c9a66b; }
+        .logo { display: flex; align-items: center; }
+        .logo-img { max-height: 40px; mix-blend-mode: screen; /* Lightens on dark header */ }
+        
         .header-actions { display: flex; gap: 1rem; align-items: center; }
-        .header-actions a { color: white; text-decoration: none; font-size: 0.875rem; padding: 0.5rem 1rem; border-radius: 4px; transition: background 0.2s; }
-        .header-actions a:hover { background: rgba(255,255,255,0.1); }
-        .btn-logout { background: #c9a66b !important; }
-        
-        .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
-        
-        /* View Toggle */
-        .view-toggle { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-        .view-btn { padding: 0.75rem 1.5rem; border: 2px solid #c9a66b; background: white; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; color: #2d2d2d; }
-        .view-btn:hover, .view-btn.active { background: #c9a66b; color: white; }
-        
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-        .stat-card { background: white; padding: 1.25rem; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; text-decoration: none; color: inherit; }
-        .stat-card:hover, .stat-card.active { border-color: #c9a66b; }
-        .stat-number { font-size: 2rem; font-weight: 700; color: #2d2d2d; }
-        .stat-label { font-size: 0.75rem; color: #6b6b6b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.25rem; }
-        .stat-card.pending .stat-number { color: #f59e0b; }
-        .stat-card.confirmed .stat-number { color: #10b981; }
-        .stat-card.cancelled .stat-number { color: #ef4444; }
-        
-        /* Calendar Section */
-        .calendar-section { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
-        .calendar-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; }
-        
-        #calendar { margin-top: 1rem; }
-        .fc { font-family: 'Montserrat', sans-serif; }
-        .fc-toolbar-title { font-family: 'Cormorant Garamond', serif !important; }
-        .fc-button-primary { background: #c9a66b !important; border-color: #c9a66b !important; }
-        .fc-button-primary:hover { background: #b8956a !important; }
-        .fc-button-primary:disabled { background: #ddd !important; border-color: #ddd !important; }
-        .fc-day-today { background: #fef9f3 !important; }
-        
-        /* Block Date Form */
-        .block-form { background: #f9f7f4; padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; }
-        .block-form h4 { margin-bottom: 1rem; font-size: 1rem; }
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-        .form-group { display: flex; flex-direction: column; gap: 0.25rem; }
-        .form-group label { font-size: 0.75rem; font-weight: 600; color: #6b6b6b; }
-        .form-group input, .form-group select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.875rem; }
-        .btn-block { background: #374151; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        .btn-block:hover { background: #1f2937; }
-        
-        /* Bookings List */
-        .bookings-section { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .section-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .section-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: #2d2d2d; }
-        
-        .booking-list { }
-        .booking-item { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f0f0f0; display: grid; gap: 1rem; }
-        .booking-item:last-child { border-bottom: none; }
-        
-        .booking-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; }
-        .booking-client { font-weight: 600; color: #2d2d2d; font-size: 1.125rem; }
-        .booking-id { font-size: 0.75rem; color: #999; }
-        
-        .booking-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
-        .booking-detail { font-size: 0.875rem; }
-        .booking-detail strong { color: #6b6b6b; font-weight: 500; display: block; font-size: 0.75rem; margin-bottom: 0.125rem; }
-        
-        .booking-services { background: #f9f7f4; padding: 0.75rem; border-radius: 6px; font-size: 0.875rem; }
-        .booking-notes { font-size: 0.875rem; color: #6b6b6b; font-style: italic; }
-        
-        .booking-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; padding-top: 0.5rem; }
-        .status-badge { padding: 0.375rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-confirmed { background: #d1fae5; color: #065f46; }
-        .status-cancelled { background: #fee2e2; color: #991b1b; }
-        
-        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .btn-confirm { background: #10b981; color: white; }
-        .btn-confirm:hover { background: #059669; }
-        .btn-cancel { background: #6b7280; color: white; }
-        .btn-cancel:hover { background: #4b5563; }
-        .btn-delete { background: #ef4444; color: white; }
-        .btn-delete:hover { background: #dc2626; }
-        
-        .empty-state { text-align: center; padding: 3rem; color: #6b6b6b; }
-        .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
-
-        /* Event popup */
-        .fc-popover { max-width: 300px; }
-        
-        @media (max-width: 640px) {
-            .header { flex-direction: column; gap: 1rem; text-align: center; }
-            .booking-header { flex-direction: column; }
-            .view-toggle { flex-wrap: wrap; }
-        }
+/* ... (existing styles) ... */
     </style>
 </head>
 <body>
     <header class="header">
-        <div class="logo">Heaven<span>Nails</span> Admin</div>
+        <div class="logo">
+            <img src="../assets/images/logo/logo.png.jpg" alt="Heaven Nails Admin" class="logo-img">
+            <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; margin-left: 10px;">The Heaven <span>Nails</span></span>
+        </div>
         <div class="header-actions">
-            <a href="../index.html">View Site</a>
+            <a href="../">View Site</a>
             <a href="?logout=1" class="btn-logout">Logout</a>
         </div>
     </header>

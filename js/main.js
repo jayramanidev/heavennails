@@ -197,7 +197,7 @@ async function handleSubmit(e) {
     const formData = new FormData(e.target);
 
     try {
-        const response = await fetch('php/book.php', {
+        const response = await fetch('book', {
             method: 'POST',
             body: formData
         });
@@ -325,18 +325,15 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 function initAvailabilityChecker() {
     const dateInput = document.getElementById('preferredDate');
     const timeSelect = document.getElementById('preferredTime');
-    const staffSelect = document.getElementById('staffId');
     const loadingIndicator = document.getElementById('slotLoading');
 
     if (!dateInput || !timeSelect) return;
 
-    // Fetch availability when date or staff changes
+    // Fetch availability when date changes
     dateInput.addEventListener('change', fetchAvailability);
-    staffSelect?.addEventListener('change', fetchAvailability);
 
     async function fetchAvailability() {
         const date = dateInput.value;
-        const staffId = staffSelect?.value || '';
 
         if (!date) {
             timeSelect.innerHTML = '<option value="">Select a date first</option>';
@@ -350,21 +347,10 @@ function initAvailabilityChecker() {
         timeSelect.innerHTML = '<option value="">Loading...</option>';
 
         try {
-            const url = `php/check-availability.php?date=${date}${staffId ? '&staff_id=' + staffId : ''}`;
-            const response = await fetch(url);
+            const response = await fetch(`check-availability?date=${date}`);
             const data = await response.json();
 
             if (data.success) {
-                // Populate staff dropdown if not already done
-                if (staffSelect && staffSelect.options.length <= 1 && data.staff) {
-                    data.staff.forEach(staff => {
-                        const option = document.createElement('option');
-                        option.value = staff.id;
-                        option.textContent = `${staff.avatar_emoji} ${staff.name} - ${staff.specialty}`;
-                        staffSelect.appendChild(option);
-                    });
-                }
-
                 // Populate time slots
                 timeSelect.innerHTML = '<option value="">Select a time slot</option>';
 

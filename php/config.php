@@ -4,11 +4,10 @@
  * Update these values with your hosting credentials
  */
 
-// Database Configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'heaven_nails');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// Load Secrets
+require_once __DIR__ . '/secrets.php';
+
+// Database Configuration (Loaded from secrets.php)
 define('DB_CHARSET', 'utf8mb4');
 
 // Admin Configuration
@@ -18,12 +17,24 @@ define('SALON_PHONE', '+91 93164 58160');
 define('SALON_EMAIL', 'businesstheheavennails@gmail.com');
 
 // Session Configuration
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Error Handling (disable in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
+// Error Handling (Production ready)
+// In production, change 'display_errors' to 0
+$isProduction = false; // Set to true for live deployment
+
+if ($isProduction) {
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+    ini_set('error_log', __DIR__ . '/error_log.txt');
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    ini_set('log_errors', 1);
+}
 
 // Database Connection Class
 class Database {
@@ -41,7 +52,8 @@ class Database {
             $this->pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
             error_log("Database connection failed: " . $e->getMessage());
-            die(json_encode(['success' => false, 'message' => 'Database connection failed']));
+            // In production, show a generic error page or message
+            die(json_encode(['success' => false, 'message' => 'Service temporarily unavailable']));
         }
     }
 
@@ -69,8 +81,7 @@ require 'PHPMailer/src/SMTP.php';
 // SMTP Settings
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587); // TLS port
-define('SMTP_USER', 'ramanijay333@gmail.com'); 
-define('SMTP_PASS', 'taeg ptfg mphd zgua'); // TODO: Replace with your actual App Password
+// SMTP_USER and SMTP_PASS are loaded from secrets.php
 
 // Helper Functions
 function sanitize($input) {
@@ -93,7 +104,7 @@ function isLoggedIn() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header('Location: admin-login.php');
+        header('Location: ../login');
         exit;
     }
 }
@@ -122,6 +133,7 @@ function sendMail($to, $subject, $body) {
 
     try {
         // Server settings
+        // $mail->SMTPDebug = SMTP::DEBUG_SERVER; // Enable verbose debug output
         $mail->isSMTP();
         $mail->Host       = SMTP_HOST;
         $mail->SMTPAuth   = true;
