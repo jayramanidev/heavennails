@@ -322,40 +322,22 @@ try {
             </div>
             <div class="gallery-grid">
                 <div class="gallery-item">
-                    <div class="gallery-placeholder"
-                        style="background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);">
-                        <span><i class="fa-solid fa-hand-sparkles"></i></span>
-                    </div>
+                    <img src="assets/images/gallery/gallery-1.jpg" alt="Minimalist Nail Art" class="gallery-img">
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder"
-                        style="background: linear-gradient(135deg, #d4a574 0%, #c49a6c 100%);">
-                        <span><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-                    </div>
+                    <img src="assets/images/gallery/gallery-2.jpg" alt="Intricate Bridal Nail Art" class="gallery-img">
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder"
-                        style="background: linear-gradient(135deg, #f0e4d7 0%, #e5d4c3 100%);">
-                        <span><i class="fa-solid fa-palette"></i></span>
-                    </div>
+                    <img src="assets/images/gallery/gallery-3.jpg" alt="Modern Geometric Nail Art" class="gallery-img">
                 </div>
                 <div class="gallery-item large">
-                    <div class="gallery-placeholder"
-                        style="background: linear-gradient(135deg, #c9a66b 0%, #b8956a 100%);">
-                        <span><i class="fa-regular fa-gem"></i></span>
-                    </div>
+                    <img src="assets/images/gallery/gallery-4.jpg" alt="Luxury Gold & Black Nail Art" class="gallery-img">
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder"
-                        style="background: linear-gradient(135deg, #e8dcd0 0%, #dbd1c5 100%);">
-                        <span><i class="fa-solid fa-spa"></i></span>
-                    </div>
+                    <img src="assets/images/gallery/gallery-5.jpg" alt="Pastel Floral Nail Art" class="gallery-img">
                 </div>
                 <div class="gallery-item">
-                    <div class="gallery-placeholder"
-                        style="background: linear-gradient(135deg, #d8c4a8 0%, #cbba9f 100%);">
-                        <span><i class="fa-regular fa-star"></i></span>
-                    </div>
+                    <img src="assets/images/gallery/gallery-6.jpg" alt="Bold Dark Nail Art" class="gallery-img">
                 </div>
             </div>
         </div>
