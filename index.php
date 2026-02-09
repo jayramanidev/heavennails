@@ -227,9 +227,9 @@ try {
 
                     <!-- Honeypot field for spam protection -->
                     <input type="text" name="website" class="honeypot-field" tabindex="-1" autocomplete="off">
-                    <!-- Step 2: Date, Time & Staff -->
+                    <!-- Step 2: Date & Time -->
                     <div class="form-step" data-step="2">
-                        <h3 class="step-title">Choose Date, Time & Artist</h3>
+                        <h3 class="step-title">Choose Date & Time</h3>
                         <div class="form-group">
                             <label for="preferredDate">Preferred Date</label>
                             <input type="date" id="preferredDate" name="preferred_date" required>

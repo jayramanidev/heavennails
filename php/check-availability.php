@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 // Get and validate date parameter
 $date = sanitize($_GET['date'] ?? '');
-$staffId = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : null;
+
 $selectedServices = isset($_GET['services']) ? explode(',', $_GET['services']) : [];
 
 if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
@@ -73,17 +73,12 @@ try {
     $db = Database::getInstance()->getConnection();
     
     // Get booked slots for the date WITH their durations
-    $sql = "SELECT preferred_time, duration_minutes, staff_id 
+    $sql = "SELECT preferred_time, duration_minutes 
             FROM appointments 
             WHERE preferred_date = :date 
             AND status IN ('pending', 'confirmed')";
     
     $params = [':date' => $date];
-    
-    if ($staffId) {
-        $sql .= " AND (staff_id = :staff_id OR staff_id IS NULL)";
-        $params[':staff_id'] = $staffId;
-    }
     
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
@@ -93,11 +88,6 @@ try {
     $blockSql = "SELECT block_time, end_time FROM blocked_dates 
                  WHERE block_date = :date";
     $blockParams = [':date' => $date];
-    
-    if ($staffId) {
-        $blockSql .= " AND (staff_id = :staff_id OR staff_id IS NULL)";
-        $blockParams[':staff_id'] = $staffId;
-    }
     
     $blockStmt = $db->prepare($blockSql);
     $blockStmt->execute($blockParams);
@@ -184,15 +174,10 @@ try {
         ];
     }
     
-    // Get staff list
-    $staffStmt = $db->query("SELECT id, name, specialty, avatar_emoji FROM staff WHERE is_active = TRUE ORDER BY name");
-    $staffList = $staffStmt->fetchAll();
-    
     echo json_encode([
         'success' => true,
         'date' => $date,
         'slots' => $slots,
-        'staff' => $staffList,
         'service_durations' => $serviceDurations,
         'requested_duration' => $requestedDuration
     ]);

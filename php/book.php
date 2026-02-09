@@ -27,7 +27,7 @@ $services = $_POST['services'] ?? [];
 $preferredDate = sanitize($_POST['preferred_date'] ?? '');
 $preferredTime = sanitize($_POST['preferred_time'] ?? '');
 $notes = sanitize($_POST['notes'] ?? '');
-$staffId = isset($_POST['staff_id']) && $_POST['staff_id'] !== '' ? intval($_POST['staff_id']) : null;
+
 
 // Validate required fields
 $errors = [];
@@ -119,16 +119,11 @@ try {
         $requestedEnd = $requestedStart + ($totalDuration * 60);
         
         // Fetch full booking details for overlap check
-        $detailSql = "SELECT preferred_time, duration_minutes, staff_id 
+        $detailSql = "SELECT preferred_time, duration_minutes 
                       FROM appointments 
                       WHERE preferred_date = :date 
                       AND status IN ('pending', 'confirmed')";
         $detailParams = [':date' => $preferredDate];
-        
-        if ($staffId) {
-            $detailSql .= " AND (staff_id = :staff_id OR staff_id IS NULL)";
-            $detailParams[':staff_id'] = $staffId;
-        }
         
         $detailStmt = $db->prepare($detailSql);
         $detailStmt->execute($detailParams);
@@ -154,8 +149,8 @@ try {
         
         // Insert booking
         $stmt = $db->prepare("
-            INSERT INTO appointments (client_name, email, phone, services, preferred_date, preferred_time, notes, status, staff_id, duration_minutes, created_at)
-            VALUES (:client_name, :email, :phone, :services, :preferred_date, :preferred_time, :notes, 'pending', :staff_id, :duration, NOW())
+            INSERT INTO appointments (client_name, email, phone, services, preferred_date, preferred_time, notes, status, duration_minutes, created_at)
+            VALUES (:client_name, :email, :phone, :services, :preferred_date, :preferred_time, :notes, 'pending', :duration, NOW())
         ");
         
         $stmt->execute([
@@ -166,7 +161,6 @@ try {
             ':preferred_date' => $preferredDate,
             ':preferred_time' => $preferredTime,
             ':notes' => $notes,
-            ':staff_id' => $staffId,
             ':duration' => $totalDuration
         ]);
         
