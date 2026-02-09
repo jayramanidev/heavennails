@@ -74,19 +74,26 @@ $sanitizedServices = array_map('sanitize', $services);
 $servicesJson = json_encode($sanitizedServices);
 
 // Calculate total duration based on selected services
-$serviceDurations = [
-    'Classic Manicure' => 45,
-    'Gel Extensions' => 90,
-    'Nail Art' => 60,
-    'Spa Pedicure' => 60,
-    'Acrylic Nails' => 90,
-    'Nail Repair' => 30
-];
 $totalDuration = 0;
-foreach ($sanitizedServices as $service) {
-    $totalDuration += $serviceDurations[$service] ?? 60;
+try {
+    $db = Database::getInstance()->getConnection();
+    
+    // Create placeholders for prepared statement
+    $placeholders = implode(',', array_fill(0, count($sanitizedServices), '?'));
+    $stmt = $db->prepare("SELECT name, duration_minutes FROM services WHERE name IN ($placeholders)");
+    $stmt->execute($sanitizedServices);
+    $dbServices = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // [name => duration]
+    
+    foreach ($sanitizedServices as $service) {
+        // Use DB duration or default to 60 if not found (fallback)
+        $totalDuration += $dbServices[$service] ?? 60;
+    }
+} catch (PDOException $e) {
+    error_log("Error fetching service durations: " . $e->getMessage());
+    $totalDuration = count($sanitizedServices) * 60; // Fallback
 }
-$totalDuration = max(60, $totalDuration); // Minimum 1 hour
+
+$totalDuration = max(30, $totalDuration); // Minimum 30 mins
 
 try {
     $db = Database::getInstance()->getConnection();

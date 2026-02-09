@@ -7,7 +7,7 @@ require_once 'config.php';
 
 // Check if already logged in
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-    header('Location: ../admin');
+    header('Location: /projects/HEAVEN/php/admin-dashboard.php');
     exit;
 }
 
@@ -26,17 +26,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_id'] = $user['id'];
-            // Regenerate session ID to prevent session fixation
             session_regenerate_id(true);
-            header('Location: ../admin');
+            error_log("Login successful for user: $username. Redirecting to dashboard.");
+            header('Location: /projects/HEAVEN/php/admin-dashboard.php');
             exit;
         } else {
             $error = 'Invalid username or password';
-            // Slow down brute force attacks slightly
-            usleep(500000); 
+            error_log("Login failed for user: $username. User found: " . ($user ? 'Yes' : 'No'));
         }
     } catch (PDOException $e) {
-        error_log("Login error: " . $e->getMessage());
+        error_log("Login DB error: " . $e->getMessage());
         $error = 'An error occurred. Please try again later.';
     }
 }
@@ -49,8 +48,8 @@ $csrfToken = generateCSRFToken();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - Heaven Nails</title>
-    <link rel="icon" type="image/jpeg" href="../assets/images/logo/logo.png.jpg?v=2">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" type="image/jpeg" href="/projects/HEAVEN/assets/images/logo/logo.png.jpg?v=2">
+    <link rel="stylesheet" href="/projects/HEAVEN/css/style.css">
     <style>
         .login-container {
             max-width: 400px;
@@ -98,7 +97,7 @@ $csrfToken = generateCSRFToken();
 <body>
     <div class="login-container">
         <div class="login-logo">
-            <img src="../assets/images/logo/logo.png.jpg" alt="Heaven Nails" class="logo-img">
+            <img src="/projects/HEAVEN/assets/images/logo/logo.png.jpg" alt="Heaven Nails" class="logo-img">
             <h1 class="login-title" style="margin-top: 0.5rem; margin-bottom: 0;">The Heaven <span>Nails</span></h1>
         </div>
         <p class="login-subtitle">Admin Dashboard Access</p>
@@ -120,7 +119,7 @@ $csrfToken = generateCSRFToken();
             <button type="submit" class="btn-login">Sign In</button>
         </form>
         
-        <a href="../index.html" class="back-link" style="display: block; text-align: center; margin-top: 1rem; text-decoration: none; color: #666;">← Back to Website</a>
+        <a href="/projects/HEAVEN/index.php" class="back-link" style="display: block; text-align: center; margin-top: 1rem; text-decoration: none; color: #666;">← Back to Website</a>
     </div>
 </body>
 </html>

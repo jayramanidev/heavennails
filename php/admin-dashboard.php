@@ -239,6 +239,49 @@ The Heaven Nails Team Rajkot</p>
         header('Location: admin' . (isset($_GET['view']) ? '?view=' . $_GET['view'] : ''));
         exit;
     }
+
+    // Service Management Actions
+    if ($action === 'add_service') {
+        $name = sanitize($_POST['name'] ?? '');
+        $price = floatval($_POST['price'] ?? 0);
+        $duration = intval($_POST['duration'] ?? 60);
+        $description = sanitize($_POST['description'] ?? '');
+        $icon = sanitize($_POST['icon'] ?? 'fa-solid fa-sparkles');
+        
+        if ($name && $price > 0) {
+            $stmt = $db->prepare("INSERT INTO services (name, price, duration_minutes, description, icon_class) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $price, $duration, $description, $icon]);
+        }
+        header('Location: ../admin?view=services');
+        exit;
+    }
+
+    if ($action === 'edit_service') {
+        $id = intval($_POST['service_id'] ?? 0);
+        $name = sanitize($_POST['name'] ?? '');
+        $price = floatval($_POST['price'] ?? 0);
+        $duration = intval($_POST['duration'] ?? 60);
+        $description = sanitize($_POST['description'] ?? '');
+        $icon = sanitize($_POST['icon'] ?? '');
+        
+        if ($id > 0 && $name && $price > 0) {
+            $stmt = $db->prepare("UPDATE services SET name=?, price=?, duration_minutes=?, description=?, icon_class=? WHERE id=?");
+            $stmt->execute([$name, $price, $duration, $description, $icon, $id]);
+        }
+        header('Location: ../admin?view=services');
+        exit;
+    }
+
+    if ($action === 'toggle_service') {
+        $id = intval($_POST['service_id'] ?? 0);
+        $active = intval($_POST['is_active'] ?? 0);
+        if ($id > 0) {
+            $stmt = $db->prepare("UPDATE services SET is_active = ? WHERE id = ?");
+            $stmt->execute([$active, $id]);
+        }
+        header('Location: ../admin?view=services');
+        exit;
+    }
 }
 
 // Logout
@@ -279,9 +322,17 @@ try {
     // Get staff for block date form
     $staffStmt = $db->query("SELECT id, name FROM staff WHERE is_active = TRUE ORDER BY name");
     $staffList = $staffStmt->fetchAll();
+
+    // Get services if view is services
+    $servicesList = [];
+    if ($view === 'services') {
+        $svcStmt = $db->query("SELECT * FROM services ORDER BY name");
+        $servicesList = $svcStmt->fetchAll();
+    }
 } catch (PDOException $e) {
     error_log("Fetch error: " . $e->getMessage());
     $staffList = [];
+    $servicesList = [];
 }
 ?>
 <!DOCTYPE html>
@@ -290,30 +341,135 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Heaven Nails</title>
-    <link rel="icon" type="image/jpeg" href="../assets/images/logo/logo.png.jpg?v=2">
+    <link rel="icon" type="image/jpeg" href="/projects/HEAVEN/assets/images/logo/logo.png.jpg?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/projects/HEAVEN/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; background: #f5f0ea; min-height: 100vh; }
         
         .header { background: #1a1a1a; color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .logo { display: flex; align-items: center; }
-        .logo-img { max-height: 40px; mix-blend-mode: screen; /* Lightens on dark header */ }
+        .logo-img { max-height: 40px; mix-blend-mode: screen; }
         
         .header-actions { display: flex; gap: 1rem; align-items: center; }
-/* ... (existing styles) ... */
+        .header-actions a { color: white; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 4px; transition: background 0.2s; }
+        .header-actions a:hover { background: rgba(255,255,255,0.1); }
+        .btn-logout { background: #ef4444 !important; }
+        .btn-logout:hover { background: #dc2626 !important; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+        
+        /* View Toggle */
+        .view-toggle { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .view-btn { padding: 0.75rem 1.25rem; background: white; border: 2px solid #e0e0e0; border-radius: 8px; color: #666; text-decoration: none; font-weight: 500; transition: all 0.2s; }
+        .view-btn:hover { border-color: #c9a66b; color: #c9a66b; }
+        .view-btn.active { background: #c9a66b; color: white; border-color: #c9a66b; }
+        
+        /* Stats Cards */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 12px; text-align: center; text-decoration: none; color: inherit; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 2px solid transparent; transition: all 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .stat-card.active { border-color: #c9a66b; }
+        .stat-number { font-size: 2.5rem; font-weight: 700; color: #2d2d2d; }
+        .stat-label { font-size: 0.875rem; color: #666; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card.pending .stat-number { color: #f59e0b; }
+        .stat-card.confirmed .stat-number { color: #10b981; }
+        .stat-card.cancelled .stat-number { color: #ef4444; }
+        
+        /* Section Headers */
+        .section-header { margin-bottom: 1.5rem; }
+        .section-title { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 600; color: #2d2d2d; }
+        
+        /* Bookings List */
+        .bookings-section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .booking-list { display: flex; flex-direction: column; gap: 1rem; }
+        .booking-item { background: #faf8f5; padding: 1.25rem; border-radius: 8px; border: 1px solid #e0e0e0; }
+        .booking-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+        .booking-client { font-size: 1.125rem; font-weight: 600; color: #2d2d2d; }
+        .booking-id { font-size: 0.8rem; color: #999; margin-top: 0.25rem; }
+        .booking-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .booking-detail { font-size: 0.9rem; }
+        .booking-detail strong { display: block; font-size: 0.75rem; text-transform: uppercase; color: #999; margin-bottom: 0.25rem; }
+        .booking-detail a { color: #c9a66b; text-decoration: none; }
+        .booking-detail a:hover { text-decoration: underline; }
+        .booking-services { background: white; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; margin-bottom: 0.75rem; }
+        .booking-notes { font-size: 0.875rem; color: #666; font-style: italic; margin-bottom: 0.75rem; }
+        .booking-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        
+        /* Status Badges */
+        .status-badge { padding: 0.4rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-confirmed { background: #d1fae5; color: #065f46; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+        
+        /* Action Buttons */
+        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .btn-confirm { background: #10b981; color: white; }
+        .btn-confirm:hover { background: #059669; }
+        .btn-cancel { background: #f59e0b; color: white; }
+        .btn-cancel:hover { background: #d97706; }
+        .btn-delete { background: #ef4444; color: white; }
+        .btn-delete:hover { background: #dc2626; }
+        
+        /* Empty State */
+        .empty-state { text-align: center; padding: 3rem 1rem; color: #999; }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+        
+        /* Calendar Section */
+        .calendar-section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .calendar-title { font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 600; color: #2d2d2d; }
+        
+        /* Block Date Form */
+        .block-form { background: #faf8f5; padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #e0e0e0; }
+        .block-form h4 { margin-bottom: 1rem; color: #2d2d2d; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+        .form-group label { font-size: 0.8rem; font-weight: 500; color: #666; }
+        .form-group input, .form-group select { padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #c9a66b; }
+        .btn-block { background: #374151; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; width: 100%; transition: background 0.2s; }
+        .btn-block:hover { background: #1f2937; }
+        
+        /* FullCalendar Customizations */
+        #calendar { margin-top: 1rem; }
+        .fc { font-family: 'Montserrat', sans-serif; }
+        .fc-toolbar-title { font-family: 'Cormorant Garamond', serif !important; }
+        .fc-button-primary { background-color: #c9a66b !important; border-color: #c9a66b !important; }
+        .fc-button-primary:hover { background-color: #b8956a !important; border-color: #b8956a !important; }
+        .fc-button-primary:not(:disabled).fc-button-active { background-color: #8b7355 !important; border-color: #8b7355 !important; }
+        
+        /* Services Section */
+        .services-section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 12px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; margin-bottom: 1.5rem; color: #2d2d2d; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { padding: 0.75rem 1rem; }
+            .container { padding: 1rem; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .stat-number { font-size: 1.75rem; }
+            .booking-details { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
     <header class="header">
         <div class="logo">
-            <img src="../assets/images/logo/logo.png.jpg" alt="Heaven Nails Admin" class="logo-img">
+            <img src="/projects/HEAVEN/assets/images/logo/logo.png.jpg" alt="Heaven Nails Admin" class="logo-img">
             <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; margin-left: 10px;">The Heaven <span>Nails</span></span>
         </div>
         <div class="header-actions">
-            <a href="../">View Site</a>
+            <a href="/projects/HEAVEN/">View Site</a>
             <a href="?logout=1" class="btn-logout">Logout</a>
         </div>
     </header>
@@ -323,6 +479,7 @@ try {
         <div class="view-toggle">
             <a href="?view=list" class="view-btn <?= $view === 'list' ? 'active' : '' ?>">📋 List View</a>
             <a href="?view=calendar" class="view-btn <?= $view === 'calendar' ? 'active' : '' ?>">📅 Calendar View</a>
+            <a href="?view=services" class="view-btn <?= $view === 'services' ? 'active' : '' ?>">💅 Services</a>
         </div>
         
         <!-- Stats -->
@@ -446,6 +603,153 @@ try {
             });
         </script>
         
+        <?php elseif ($view === 'services'): ?>
+        <!-- Services Management -->
+        <div class="services-section">
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="section-title">Manage Services</h2>
+                <button onclick="document.getElementById('addServiceModal').style.display='block'" class="btn-block" style="width: auto;">+ Add New Service</button>
+            </div>
+
+            <div class="service-list" style="background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #f0f0f0; text-align: left;">
+                            <th style="padding: 1rem;">Service Name</th>
+                            <th style="padding: 1rem;">Price</th>
+                            <th style="padding: 1rem;">Duration</th>
+                            <th style="padding: 1rem;">Status</th>
+                            <th style="padding: 1rem;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($servicesList as $svc): ?>
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 1rem;">
+                                <strong><?= htmlspecialchars($svc['name']) ?></strong><br>
+                                <small style="color: #666;"><?= htmlspecialchars(substr($svc['description'], 0, 50)) ?>...</small>
+                            </td>
+                            <td style="padding: 1rem;">₹<?= number_format($svc['price'], 2) ?></td>
+                            <td style="padding: 1rem;"><?= $svc['duration_minutes'] ?> mins</td>
+                            <td style="padding: 1rem;">
+                                <span class="status-badge status-<?= $svc['is_active'] ? 'confirmed' : 'cancelled' ?>">
+                                    <?= $svc['is_active'] ? 'Active' : 'Inactive' ?>
+                                </span>
+                            </td>
+                            <td style="padding: 1rem;">
+                                <button onclick="editService(<?= htmlspecialchars(json_encode($svc)) ?>)" class="action-btn" style="background: #3b82f6; color: white;">Edit</button>
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="action" value="toggle_service">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
+                                    <input type="hidden" name="service_id" value="<?= $svc['id'] ?>">
+                                    <input type="hidden" name="is_active" value="<?= $svc['is_active'] ? 0 : 1 ?>">
+                                    <button type="submit" class="action-btn" style="background: <?= $svc['is_active'] ? '#ef4444' : '#10b981' ?>; color: white;">
+                                        <?= $svc['is_active'] ? 'Deactivate' : 'Activate' ?>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Add Service Modal -->
+        <div id="addServiceModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div class="modal-content" style="background: white; padding: 2rem; border-radius: 8px; width: 500px; max-width: 90%;">
+                <h3>Add New Service</h3>
+                <form method="POST">
+                    <input type="hidden" name="action" value="add_service">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" name="name" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;"></textarea>
+                    </div>
+                    <div class="form-row" style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Price (₹)</label>
+                            <input type="number" name="price" required step="0.01" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Duration (mins)</label>
+                            <input type="number" name="duration" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Icon Class (FontAwesome)</label>
+                        <input type="text" name="icon" placeholder="fa-solid fa-sparkles" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                        <button type="button" onclick="document.getElementById('addServiceModal').style.display='none'" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Service</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Service Modal -->
+        <div id="editServiceModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div class="modal-content" style="background: white; padding: 2rem; border-radius: 8px; width: 500px; max-width: 90%;">
+                <h3>Edit Service</h3>
+                <form method="POST" id="editServiceForm">
+                    <input type="hidden" name="action" value="edit_service">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generateCSRFToken()) ?>">
+                    <input type="hidden" name="service_id" id="edit_id">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" name="name" id="edit_name" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" id="edit_description" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;"></textarea>
+                    </div>
+                    <div class="form-row" style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Price (₹)</label>
+                            <input type="number" name="price" id="edit_price" required step="0.01" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Duration (mins)</label>
+                            <input type="number" name="duration" id="edit_duration" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Icon Class (FontAwesome)</label>
+                        <input type="text" name="icon" id="edit_icon" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc;">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                        <button type="button" onclick="document.getElementById('editServiceModal').style.display='none'" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            function editService(svc) {
+                document.getElementById('edit_id').value = svc.id;
+                document.getElementById('edit_name').value = svc.name;
+                document.getElementById('edit_description').value = svc.description;
+                document.getElementById('edit_price').value = svc.price;
+                document.getElementById('edit_duration').value = svc.duration_minutes;
+                document.getElementById('edit_icon').value = svc.icon_class;
+                
+                const modal = document.getElementById('editServiceModal');
+                modal.style.display = 'flex';
+            }
+            
+            // Close modals when clicking outside
+            window.onclick = function(event) {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = "none";
+                }
+            }
+        </script>
         <?php else: ?>
         <!-- List View -->
         <div class="bookings-section">

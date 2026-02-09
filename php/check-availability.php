@@ -42,14 +42,24 @@ $businessHours = [
 $closingTime = 22 * 60;
 
 // Service durations in minutes
-$serviceDurations = [
-    'Classic Manicure' => 45,
-    'Gel Extensions' => 90,
-    'Nail Art' => 60,
-    'Spa Pedicure' => 60,
-    'Acrylic Nails' => 90,
-    'Nail Repair' => 30
-];
+// Service durations in minutes (fetch from DB)
+$serviceDurations = [];
+try {
+    $db = Database::getInstance()->getConnection();
+    $svcStmt = $db->query("SELECT name, duration_minutes FROM services");
+    $serviceDurations = $svcStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch (PDOException $e) {
+    error_log("Error fetching service durations: " . $e->getMessage());
+    // Fallback defaults
+    $serviceDurations = [
+        'Classic Manicure' => 45,
+        'Gel Extensions' => 90,
+        'Nail Art' => 60,
+        'Spa Pedicure' => 60,
+        'Acrylic Nails' => 90,
+        'Nail Repair' => 30
+    ];
+}
 
 // Calculate total duration for selected services
 $requestedDuration = 0;
