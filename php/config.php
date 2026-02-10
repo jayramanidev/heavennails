@@ -24,7 +24,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // Error Handling & Environment Detection
 // Automatically detect if running on localhost or production
 $whitelist = ['127.0.0.1', '::1', 'localhost'];
-$isLocal = in_array($_SERVER['REMOTE_ADDR'], $whitelist) || strpos($_SERVER['HTTP_HOST'], 'localhost') !== false;
+$isLocal = in_array($_SERVER['REMOTE_ADDR'] ?? '', $whitelist) || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') !== false);
 
 $isProduction = !$isLocal; 
 

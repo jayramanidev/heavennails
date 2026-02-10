@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `admins` (
 
 -- Insert default admin (password: heaven2026)
 INSERT INTO `admins` (`username`, `password_hash`) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+('admin', '$2y$10$E5LbLS6Jypcx.17G/itItOon1OEtG2xgnJva7SH9dvGmjqiaaj.K2');
 
 -- Staff table
 CREATE TABLE IF NOT EXISTS `staff` (
