@@ -21,16 +21,21 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Error Handling (Production ready)
-// In production, change 'display_errors' to 0
-$isProduction = false; // Set to true for live deployment
+// Error Handling & Environment Detection
+// Automatically detect if running on localhost or production
+$whitelist = ['127.0.0.1', '::1', 'localhost'];
+$isLocal = in_array($_SERVER['REMOTE_ADDR'], $whitelist) || strpos($_SERVER['HTTP_HOST'], 'localhost') !== false;
+
+$isProduction = !$isLocal; 
 
 if ($isProduction) {
-    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
-    ini_set('display_errors', 0);
+    // Production Settings
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
+    ini_set('display_errors', 0); // Hide errors from users
     ini_set('log_errors', 1);
-    ini_set('error_log', __DIR__ . '/error_log.txt');
+    ini_set('error_log', __DIR__ . '/../error_log.txt'); // Log outside public access if possible, or protect it
 } else {
+    // Development Settings
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
     ini_set('log_errors', 1);

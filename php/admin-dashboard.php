@@ -341,12 +341,12 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Heaven Nails</title>
-    <link rel="icon" type="image/jpeg" href="/projects/HEAVEN/assets/images/logo/logo.png.jpg?v=2">
+    <link rel="icon" type="image/jpeg" href="../assets/images/logo/logo.png.jpg?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/projects/HEAVEN/css/style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; background: #f5f0ea; min-height: 100vh; }
@@ -465,11 +465,11 @@ try {
 <body>
     <header class="header">
         <div class="logo">
-            <img src="/projects/HEAVEN/assets/images/logo/logo.png.jpg" alt="Heaven Nails Admin" class="logo-img">
+            <img src="../assets/images/logo/logo.png.jpg" alt="Heaven Nails Admin" class="logo-img">
             <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; margin-left: 10px;">The Heaven <span>Nails</span></span>
         </div>
         <div class="header-actions">
-            <a href="/projects/HEAVEN/">View Site</a>
+            <a href="../">View Site</a>
             <a href="?logout=1" class="btn-logout">Logout</a>
         </div>
     </header>

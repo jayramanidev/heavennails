@@ -2,13 +2,16 @@ DirectoryIndex index.php index.html
 RewriteEngine On
 
 # Admin Dashboard
-RewriteRule ^admin/?$ /projects/HEAVEN/php/admin-dashboard.php [L,QSA,NC]
+# Admin Dashboard
+RewriteRule ^admin/?$ php/admin-dashboard.php [L,QSA,NC]
 
 # Admin Login
-RewriteRule ^login/?$ /projects/HEAVEN/php/admin-login.php [L,QSA,NC]
+# Admin Login
+RewriteRule ^login/?$ php/admin-login.php [L,QSA,NC]
 
 # Booking API
-RewriteRule ^book/?$ /projects/HEAVEN/php/book.php [L,QSA,NC]
+# Booking API
+RewriteRule ^book/?$ php/book.php [L,QSA,NC]
 
 # Security Headers
 <IfModule mod_headers.c>
@@ -43,4 +46,5 @@ Options -Indexes
 </IfModule>
 
 # Availability API
-RewriteRule ^check-availability/?$ /projects/HEAVEN/php/check-availability.php [L,QSA,NC]
+# Availability API
+RewriteRule ^check-availability/?$ php/check-availability.php [L,QSA,NC]
